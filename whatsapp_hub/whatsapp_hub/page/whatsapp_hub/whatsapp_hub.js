@@ -85,7 +85,7 @@ whatsapp_hub.Hub = class Hub {
 		this.qr_dialog = new frappe.ui.Dialog({
 			title: __("Link WhatsApp — {0}", [name]),
 			size: "large",
-			on_hide: () => { this.qr_dialog = null; },
+			on_hide: () => { clearInterval(this._poll); this.qr_dialog = null; },
 		});
 		this.qr_dialog.$body.html(`<div class="row">
 			<div class="col-md-6"><h4>${__("Use WhatsApp on your phone to link this account")}</h4>
@@ -98,7 +98,28 @@ whatsapp_hub.Hub = class Hub {
 				<div class="text-muted small wa-note"></div></div>
 			<div class="col-md-6"><div class="wa-qr"><span class="text-muted">${__("Generating QR code…")}</span></div></div></div>`);
 		this.qr_dialog.show();
-		frappe.xcall("whatsapp_hub.api.start_session", { account: name }).catch(() => this.qr_dialog && this.qr_dialog.hide());
+		frappe.xcall("whatsapp_hub.api.start_session", { account: name })
+			.then(() => this.poll_qr(name))
+			.catch(() => this.qr_dialog && this.qr_dialog.hide());
+	}
+
+	poll_qr(name) {
+		clearInterval(this._poll);
+		this._last_qr = null;
+		this._poll = setInterval(() => {
+			if (!this.qr_dialog) return clearInterval(this._poll);
+			frappe.xcall("whatsapp_hub.api.get_qr", { account: name }).then((r) => {
+				if (!this.qr_dialog) return;
+				if (r.qr && r.qr !== this._last_qr) {
+					this._last_qr = r.qr;
+					this.on_qr({ account: name, qr: r.qr });
+				}
+				if (["Connected", "Disconnected", "Failed"].includes(r.status)) {
+					clearInterval(this._poll);
+					this.on_status({ account: name, status: r.status, phone: r.phone, error: r.error });
+				}
+			});
+		}, 2000);
 	}
 
 	on_qr(d) {

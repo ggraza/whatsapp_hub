@@ -162,6 +162,7 @@ def webhook():
 		user = frappe.db.get_value("WhatsApp Account", acc, "started_by")
 		if user:
 			frappe.publish_realtime("whatsapp_hub_qr", {"account": acc, "qr": data.get("qr")}, user=user)
+		frappe.cache.set_value(f"whatsapp_hub_qr:{acc}", data.get("qr"), expires_in_sec=120)
 		frappe.db.set_value("WhatsApp Account", acc, "status", "QR Pending")
 	elif event == "status":
 		status = data.get("status")
@@ -188,3 +189,12 @@ def webhook():
 			"recipient": data.get("from"), "message": data.get("text"), "message_id": data.get("message_id"),
 		}).insert(ignore_permissions=True)
 	return {"ok": True}
+
+
+@frappe.whitelist()
+def get_qr(account):
+	"""Polling fallback for the QR dialog (works when websockets are blocked, e.g. behind a proxy)."""
+	_manager()
+	status, phone, error = frappe.db.get_value("WhatsApp Account", account, ["status", "phone_number", "last_error"])
+	qr = frappe.cache.get_value(f"whatsapp_hub_qr:{account}") if status == "QR Pending" else None
+	return {"qr": qr, "status": status, "phone": phone, "error": error}
