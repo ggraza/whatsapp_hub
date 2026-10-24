@@ -196,5 +196,14 @@ def get_qr(account):
 	"""Polling fallback for the QR dialog (works when websockets are blocked, e.g. behind a proxy)."""
 	_manager()
 	status, phone, error = frappe.db.get_value("WhatsApp Account", account, ["status", "phone_number", "last_error"])
-	qr = frappe.cache.get_value(f"whatsapp_hub_qr:{account}") if status == "QR Pending" else None
+	qr = None
+	try:
+		live = utils.gateway("GET", f"/sessions/{account}/qr", timeout=8)
+		qr = live.get("qr")
+		status = live.get("status") or status
+		phone = live.get("phone") or phone
+	except GatewayError as e:
+		error = str(e)
+	if not qr and status == "QR Pending":
+		qr = frappe.cache.get_value(f"whatsapp_hub_qr:{account}")
 	return {"qr": qr, "status": status, "phone": phone, "error": error}

@@ -66,10 +66,11 @@ async function start(id, webhook) {
     if (sessions.get(id) !== s) return;
     if (qr) {
       s.status = 'QR Pending';
-      emit(s, id, { event: 'qr', qr: await QRCode.toDataURL(qr, { margin: 1, width: 320 }) });
+      s.qr = await QRCode.toDataURL(qr, { margin: 1, width: 320 });
+      emit(s, id, { event: 'qr', qr: s.qr });
     }
     if (connection === 'open') {
-      s.retries = 0;
+      s.retries = 0; s.qr = null;
       s.phone = String(sock.user?.id || '').split(':')[0].split('@')[0];
       setStatus(s, id, 'Connected');
     }
@@ -150,6 +151,11 @@ app.post('/sessions/:id/start', wrap(async (req, res) => {
 app.get('/sessions/:id/status', wrap(async (req, res) => {
   const s = sessions.get(req.params.id);
   res.json({ status: s?.status || 'Disconnected', phone: s?.phone || null });
+}));
+
+app.get('/sessions/:id/qr', wrap(async (req, res) => {
+  const s = sessions.get(req.params.id);
+  res.json({ status: s?.status || 'Disconnected', phone: s?.phone || null, qr: s?.status === 'QR Pending' ? s.qr || null : null });
 }));
 
 app.post('/sessions/:id/logout', wrap(async (req, res) => {
