@@ -1,0 +1,200 @@
+// Multi-session WhatsApp Web gateway for Frappe/ERPNext (Baileys).
+// Env: API_SECRET (required) PORT=3100 HOST=127.0.0.1 SESSIONS_DIR=./sessions
+//      SEND_DELAY_MIN_MS=1500 SEND_DELAY_MAX_MS=4000
+import express from 'express';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import pino from 'pino';
+import QRCode from 'qrcode';
+import makeWASocket, {
+  useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers,
+} from '@whiskeysockets/baileys';
+
+const API_SECRET = process.env.API_SECRET;
+if (!API_SECRET) { console.error('API_SECRET is required'); process.exit(1); }
+const PORT = +process.env.PORT || 3100;
+const HOST = process.env.HOST || '127.0.0.1';
+const DIR = path.resolve(process.env.SESSIONS_DIR || './sessions');
+const DMIN = +process.env.SEND_DELAY_MIN_MS || 1500;
+const DMAX = +process.env.SEND_DELAY_MAX_MS || 4000;
+const logger = pino({ level: process.env.LOG_LEVEL || 'warn' });
+const sessions = new Map();
+const sentCache = new Map(); // for retry/resend requests
+const sentCache = new Map();   // for retry/resend requests
+fs.mkdirSync(DIR, { recursive: true });
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const sdir = (id) => path.join(DIR, id);
+const validId = (id) => /^[a-z0-9][a-z0-9_-]{1,39}$/.test(id);
+const digest = (s) => crypto.createHash('sha256').update(String(s)).digest();
+const okSecret = (v) => crypto.timingSafeEqual(digest(v || ''), digest(API_SECRET));
+
+async function emit(s, id, payload) {
+  if (!s?.webhook) return;
+  try {
+    await fetch(s.webhook, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-secret': API_SECRET },
+      body: JSON.stringify({ session: id, ...payload }),
+    });
+  } catch (e) { logger.warn({ id, err: e.message }, 'webhook failed'); }
+}
+const setStatus = (s, id, status, extra = {}) => { s.status = status; return emit(s, id, { event: 'status', status, phone: s.phone, ...extra }); };
+
+async function start(id, webhook) {
+  const old = sessions.get(id);
+  if (old?.status === 'Connected') { if (webhook) old.webhook = webhook; return old; }
+  if (old?.sock) { try { old.sock.end(undefined); } catch {} }
+
+  fs.mkdirSync(sdir(id), { recursive: true });
+  const metaFile = path.join(sdir(id), 'meta.json');
+  if (!webhook && fs.existsSync(metaFile)) webhook = JSON.parse(fs.readFileSync(metaFile)).webhook;
+  fs.writeFileSync(metaFile, JSON.stringify({ webhook }));
+
+  const { state, saveCreds } = await useMultiFileAuthState(path.join(sdir(id), 'auth'));
+  const { version } = await fetchLatestBaileysVersion();
+  const sock = makeWASocket({
+    version, auth: state, logger, browser: Browsers.macOS('Chrome'),
+    syncFullHistory: false, markOnlineOnConnect: false,
+    getMessage: async (key) => sentCache.get(key.id),
+    getMessage: async (key) => sentCache.get(key.id),
+  });
+  const s = { sock, webhook, status: 'Starting', phone: null, chain: Promise.resolve(), retries: 0 };
+  sessions.set(id, s);
+  sock.ev.on('creds.update', saveCreds);
+
+  sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
+    if (sessions.get(id) !== s) return;
+    if (qr) {
+      s.status = 'QR Pending';
+      emit(s, id, { event: 'qr', qr: await QRCode.toDataURL(qr, { margin: 1, width: 320 }) });
+    }
+    if (connection === 'open') {
+      s.retries = 0;
+      s.phone = String(sock.user?.id || '').split(':')[0].split('@')[0];
+      setStatus(s, id, 'Connected');
+    }
+    if (connection === 'close') {
+      const code = lastDisconnect?.error?.output?.statusCode;
+      const unlinked = code === DisconnectReason.loggedOut;
+      const qrGaveUp = !state.creds.registered && code !== DisconnectReason.restartRequired;
+      if (unlinked || qrGaveUp) {
+        sessions.delete(id);
+        fs.rmSync(path.join(sdir(id), 'auth'), { recursive: true, force: true });
+        s.phone = null;
+        await setStatus(s, id, 'Disconnected', { error: unlinked ? 'Logged out from phone' : 'QR code expired' });
+      } else {
+        await setStatus(s, id, 'Starting');
+        setTimeout(() => sessions.get(id) === s && start(id, s.webhook).catch(() => {}), Math.min(30000, 2000 * ++s.retries));
+      }
+    }
+  });
+
+  sock.ev.on('messages.update', (updates) => {
+    const map = { 0: 'Failed', 2: 'Sent', 3: 'Delivered', 4: 'Read', 5: 'Read' };
+    for (const { key, update } of updates)
+      if (key.fromMe && map[update.status])
+        emit(s, id, { event: 'message_status', message_id: key.id, status: map[update.status] });
+  });
+
+  sock.ev.on('messages.upsert', ({ messages, type }) => {
+    if (type !== 'notify') return;
+    for (const m of messages) {
+      if (m.key.fromMe || !m.message) continue;
+      const text = m.message.conversation || m.message.extendedTextMessage?.text;
+      if (!text) continue;
+      const jid = m.key.remoteJid;
+      emit(s, id, {
+        event: 'incoming', message_id: m.key.id, text, is_group: jid.endsWith('@g.us'),
+        from: jid.endsWith('@g.us') ? jid : jid.split('@')[0],
+      });
+    }
+  });
+  return s;
+}
+
+const connected = (id) => {
+  const s = sessions.get(id);
+  if (!s || s.status !== 'Connected') throw Object.assign(new Error('Session not connected'), { code: 409 });
+  return s;
+};
+
+// per-session serial queue with randomised delay (anti-ban pacing)
+const enqueue = (s, fn) => {
+  const p = s.chain.then(async () => { await sleep(DMIN + Math.random() * (DMAX - DMIN)); return fn(); });
+  s.chain = p.catch(() => {});
+  return p;
+};
+
+async function toJid(s, to) {
+  if (String(to).endsWith('@g.us')) return to;
+  const digits = String(to).replace(/\D/g, '');
+  const jid = `${digits}@s.whatsapp.net`;
+  const [r] = (await s.sock.onWhatsApp(jid)) || [];
+  if (!r?.exists) throw Object.assign(new Error(`${digits} is not on WhatsApp`), { code: 422 });
+  return r.jid;
+}
+
+const app = express();
+app.use(express.json({ limit: '30mb' }));
+app.use((req, res, next) => (okSecret(req.get('x-api-secret')) ? next() : res.status(401).json({ error: 'Unauthorized' })));
+app.param('id', (req, res, next, id) => (validId(id) ? next() : res.status(400).json({ error: 'Bad session id' })));
+const wrap = (fn) => (req, res) => fn(req, res).catch((e) => res.status(e.code && e.code < 600 ? e.code : 500).json({ error: e.message }));
+
+app.get('/health', (req, res) => res.json({ ok: true, sessions: sessions.size }));
+
+app.post('/sessions/:id/start', wrap(async (req, res) => {
+  await start(req.params.id, req.body.webhook);
+  res.json({ ok: true });
+}));
+
+app.get('/sessions/:id/status', wrap(async (req, res) => {
+  const s = sessions.get(req.params.id);
+  res.json({ status: s?.status || 'Disconnected', phone: s?.phone || null });
+}));
+
+app.post('/sessions/:id/logout', wrap(async (req, res) => {
+  const id = req.params.id, s = sessions.get(id);
+  if (s?.sock) { try { await s.sock.logout(); } catch {} }
+  sessions.delete(id);
+  fs.rmSync(sdir(id), { recursive: true, force: true });
+  res.json({ ok: true });
+}));
+
+app.get('/sessions/:id/groups', wrap(async (req, res) => {
+  const s = connected(req.params.id);
+  const all = await s.sock.groupFetchAllParticipating();
+  res.json({ groups: Object.values(all).map((g) => ({ jid: g.id, subject: g.subject, participants: g.participants.length })) });
+}));
+
+app.post('/sessions/:id/send', wrap(async (req, res) => {
+  const s = connected(req.params.id);
+  const { to, text = '', media } = req.body;
+  if (!to) throw Object.assign(new Error('`to` required'), { code: 400 });
+  const sent = await enqueue(s, async () => {
+    const jid = await toJid(s, to);
+    let content;
+    if (media) {
+      const buf = Buffer.from(media.content_base64, 'base64');
+      const mt = media.mimetype || 'application/octet-stream';
+      if (mt.startsWith('image/')) content = { image: buf, caption: text };
+      else if (mt.startsWith('video/')) content = { video: buf, caption: text };
+      else content = { document: buf, fileName: media.filename, mimetype: mt, caption: text };
+    } else content = { text };
+    // return s.sock.sendMessage(jid, content);
+    const m = await s.sock.sendMessage(jid, content);
+    sentCache.set(m.key.id, m.message);
+    if (sentCache.size > 2000) sentCache.delete(sentCache.keys().next().value);
+    return m;
+  });
+  res.json({ message_id: sent.key.id });
+}));
+
+app.listen(PORT, HOST, async () => {
+  console.log(`WhatsApp gateway on ${HOST}:${PORT}`);
+  for (const id of fs.readdirSync(DIR)) {   // restore linked sessions after restart
+    if (validId(id) && fs.existsSync(path.join(sdir(id), 'auth', 'creds.json')))
+      start(id).catch((e) => console.warn('restore failed', id, e.message));
+  }
+});

@@ -1,0 +1,14 @@
+{
+ "doctype": "Page",
+ "name": "whatsapp-hub",
+ "page_name": "whatsapp-hub",
+ "title": "WhatsApp Hub",
+ "module": "WhatsApp Hub",
+ "standard": "Yes",
+ "icon": "chat",
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "WhatsApp Manager"},
+  {"role": "WhatsApp User"}
+ ]
+}

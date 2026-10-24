@@ -8,7 +8,7 @@ app_license = "mit"
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["erpnext"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -26,7 +26,9 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/whatsapp_hub/css/whatsapp_hub.css"
-# app_include_js = "/assets/whatsapp_hub/js/whatsapp_hub.js"
+app_include_js = ["/assets/whatsapp_hub/js/whatsapp_hub.js",
+	"/assets/whatsapp_hub/js/whatsapp_share.js",
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/whatsapp_hub/css/whatsapp_hub.css"
@@ -85,8 +87,17 @@ app_license = "mit"
 # Installation
 # ------------
 
-# before_install = "whatsapp_hub.install.before_install"
-# after_install = "whatsapp_hub.install.after_install"
+before_install = "whatsapp_hub.install.before_install"
+after_install = "whatsapp_hub.install.setup"
+
+after_migrate = ["whatsapp_hub.install.setup"]
+
+boot_session = "whatsapp_hub.utils.boot_session"
+
+# WhatsApp becomes a channel of the standard Notification doctype
+override_doctype_class = {
+	"Notification": "whatsapp_hub.overrides.notification.WhatsAppNotification",
+}
 
 # Uninstallation
 # ------------
@@ -149,13 +160,14 @@ app_license = "mit"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
+scheduler_events = {
+	"cron": {"*/5 * * * *": ["whatsapp_hub.tasks.sync_status"]},
 # 	"all": [
 # 		"whatsapp_hub.tasks.all"
 # 	],
-# 	"daily": [
-# 		"whatsapp_hub.tasks.daily"
-# 	],
+	"daily": [
+		"whatsapp_hub.tasks.clear_old_logs"
+	],
 # 	"hourly": [
 # 		"whatsapp_hub.tasks.hourly"
 # 	],
@@ -165,7 +177,7 @@ app_license = "mit"
 # 	"monthly": [
 # 		"whatsapp_hub.tasks.monthly"
 # 	],
-# }
+}
 
 # Testing
 # -------

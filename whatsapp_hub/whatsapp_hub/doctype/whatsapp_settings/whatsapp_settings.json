@@ -1,0 +1,117 @@
+{
+ "doctype": "DocType",
+ "name": "WhatsApp Settings",
+ "module": "WhatsApp Hub",
+ "issingle": 1,
+ "custom": 0,
+ "engine": "InnoDB",
+ "editable_grid": 1,
+ "track_changes": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "field_order": [
+  "enabled",
+  "gateway_section",
+  "gateway_url",
+  "api_secret",
+  "site_url",
+  "defaults_section",
+  "default_country_code",
+  "max_attachment_mb",
+  "log_incoming",
+  "log_retention_days",
+  "share_section",
+  "share_message_template"
+ ],
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "0",
+   "description": "Master switch. When off nothing is sent and the Send WhatsApp button is hidden."
+  },
+  {
+   "fieldname": "gateway_section",
+   "fieldtype": "Section Break",
+   "label": "Gateway"
+  },
+  {
+   "fieldname": "gateway_url",
+   "fieldtype": "Data",
+   "label": "Gateway URL",
+   "default": "http://127.0.0.1:3100"
+  },
+  {
+   "fieldname": "api_secret",
+   "fieldtype": "Password",
+   "label": "API Secret",
+   "description": "Same value as API_SECRET of the gateway"
+  },
+  {
+   "fieldname": "site_url",
+   "fieldtype": "Data",
+   "label": "Site URL for Webhooks",
+   "description": "URL the gateway uses to reach this site. Empty = site URL."
+  },
+  {
+   "fieldname": "defaults_section",
+   "fieldtype": "Section Break",
+   "label": "Defaults"
+  },
+  {
+   "fieldname": "default_country_code",
+   "fieldtype": "Data",
+   "label": "Default Country Code",
+   "default": "92",
+   "description": "Prepended to local numbers starting with 0"
+  },
+  {
+   "fieldname": "max_attachment_mb",
+   "fieldtype": "Int",
+   "label": "Max Attachment (MB)",
+   "default": "15"
+  },
+  {
+   "fieldname": "log_incoming",
+   "fieldtype": "Check",
+   "label": "Log Incoming Messages"
+  },
+  {
+   "fieldname": "log_retention_days",
+   "fieldtype": "Int",
+   "label": "Log Retention (days)",
+   "default": "90",
+   "description": "0 = keep forever"
+  },
+  {
+   "fieldname": "share_section",
+   "fieldtype": "Section Break",
+   "label": "Share Button (Image / App)"
+  },
+  {
+   "fieldname": "share_message_template",
+   "fieldtype": "Text",
+   "label": "Share Message Template",
+   "default": "Thank you for your business.\nPlease find the details of your transaction.\nInvoice No: {{ doc.name }}\nWe appreciate your trust and look forward to serving you again.\nRegards,",
+   "description": "Jinja. <code>doc</code> is the document. Used by Send -> WhatsApp (Image / App)."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1
+  },
+  {
+   "role": "WhatsApp Manager",
+   "read": 1,
+   "write": 1
+  }
+ ],
+ "owner": "Administrator",
+ "creation": "2026-10-24 00:00:00",
+ "modified": "2026-10-24 00:00:00",
+ "modified_by": "Administrator",
+ "states": []
+}

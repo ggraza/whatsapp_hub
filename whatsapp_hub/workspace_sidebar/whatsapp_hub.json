@@ -1,0 +1,88 @@
+{
+ "app": "whatsapp_hub",
+ "creation": "2026-10-24 03:54:18.015839",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "header_icon": "message-circle-reply",
+ "idx": 0,
+ "items": [
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "home",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Home",
+   "link_to": "WhatsApp Hubs",
+   "link_type": "Workspace",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "scan-qr-code",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "WhatsApp Hub",
+   "link_to": "whatsapp-hub",
+   "link_type": "Page",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "link",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "WhatsApp Account",
+   "link_to": "WhatsApp Account",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "users-round",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "WhatsApp Group",
+   "link_to": "WhatsApp Group",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "clipboard-list",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "WhatsApp Message Log",
+   "link_to": "WhatsApp Message Log",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "settings",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "WhatsApp Settings",
+   "link_to": "WhatsApp Settings",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-10-24 03:54:18.015839",
+ "modified_by": "Administrator",
+ "name": "WhatsApp Hub",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "WhatsApp Hub"
+}

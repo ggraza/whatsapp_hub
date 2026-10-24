@@ -1,0 +1,97 @@
+{
+ "doctype": "DocType",
+ "name": "WhatsApp Group",
+ "module": "WhatsApp Hub",
+ "issingle": 0,
+ "custom": 0,
+ "engine": "InnoDB",
+ "editable_grid": 1,
+ "track_changes": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "field_order": [
+  "account",
+  "jid",
+  "subject",
+  "participants",
+  "link_section",
+  "party_type",
+  "party"
+ ],
+ "fields": [
+  {
+   "fieldname": "account",
+   "fieldtype": "Link",
+   "label": "Account",
+   "options": "WhatsApp Account",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "jid",
+   "fieldtype": "Data",
+   "label": "Group JID",
+   "reqd": 1,
+   "description": "e.g. 1203630xxxxxxx@g.us (use Sync Groups)"
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Group Name",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "participants",
+   "fieldtype": "Int",
+   "label": "Participants",
+   "read_only": 1
+  },
+  {
+   "fieldname": "link_section",
+   "fieldtype": "Section Break",
+   "label": "Linked Party"
+  },
+  {
+   "fieldname": "party_type",
+   "fieldtype": "Select",
+   "label": "Party Type",
+   "options": "\nCustomer\nSupplier\nEmployee",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "label": "Party",
+   "options": "party_type",
+   "in_list_view": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1
+  },
+  {
+   "role": "WhatsApp Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1
+  },
+  {
+   "role": "WhatsApp User",
+   "read": 1
+  }
+ ],
+ "owner": "Administrator",
+ "creation": "2026-10-24 00:00:00",
+ "modified": "2026-10-24 00:00:00",
+ "modified_by": "Administrator",
+ "states": [],
+ "autoname": "hash",
+ "title_field": "subject"
+}

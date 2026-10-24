@@ -1,0 +1,158 @@
+{
+ "doctype": "DocType",
+ "name": "WhatsApp Message Log",
+ "module": "WhatsApp Hub",
+ "issingle": 0,
+ "custom": 0,
+ "engine": "InnoDB",
+ "editable_grid": 1,
+ "track_changes": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "field_order": [
+  "account",
+  "direction",
+  "status",
+  "recipient_type",
+  "recipient",
+  "message",
+  "attachment",
+  "ref_section",
+  "party_type",
+  "party",
+  "reference_doctype",
+  "reference_name",
+  "notification",
+  "message_id",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "account",
+   "fieldtype": "Link",
+   "label": "Account",
+   "options": "WhatsApp Account",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "direction",
+   "fieldtype": "Select",
+   "label": "Direction",
+   "options": "Outgoing\nIncoming",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Queued\nSent\nDelivered\nRead\nReceived\nFailed",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "recipient_type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Individual\nGroup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "recipient",
+   "fieldtype": "Data",
+   "label": "Recipient / Sender",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Long Text",
+   "label": "Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Data",
+   "label": "Attachment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ref_section",
+   "fieldtype": "Section Break",
+   "label": "References"
+  },
+  {
+   "fieldname": "party_type",
+   "fieldtype": "Link",
+   "label": "Party Type",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "label": "Party",
+   "options": "party_type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Name",
+   "options": "reference_doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notification",
+   "fieldtype": "Link",
+   "label": "Notification",
+   "options": "Notification",
+   "read_only": 1
+  },
+  {
+   "fieldname": "message_id",
+   "fieldtype": "Data",
+   "label": "Gateway Message ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "delete": 1
+  },
+  {
+   "role": "WhatsApp Manager",
+   "read": 1
+  },
+  {
+   "role": "WhatsApp User",
+   "read": 1,
+   "if_owner": 1
+  }
+ ],
+ "owner": "Administrator",
+ "creation": "2026-10-24 00:00:00",
+ "modified": "2026-10-24 00:00:00",
+ "modified_by": "Administrator",
+ "states": [],
+ "autoname": "hash"
+}

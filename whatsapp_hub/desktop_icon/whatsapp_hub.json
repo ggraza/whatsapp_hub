@@ -1,0 +1,22 @@
+{
+ "app": "whatsapp_hub",
+ "bg_color": "gray",
+ "creation": "2026-10-24 04:01:39.633374",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "WhatsApp Hub",
+ "link_to": "WhatsApp Hub",
+ "link_type": "Workspace Sidebar",
+ "logo_url": "/assets/whatsapp_hub/images/whatsapp_hub.svg",
+ "modified": "2026-10-24 04:01:39.633374",
+ "modified_by": "Administrator",
+ "name": "WhatsApp Hub",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "sidebar": "WhatsApp Hub",
+ "standard": 1
+}
