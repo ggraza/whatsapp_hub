@@ -54,3 +54,6 @@ jspm_packages/
 # Aider AI Chat
 .aider*
 .github/workflows/ci.yml
+gateway/sessions/
+gateway/node_modules/
+gateway/.env
